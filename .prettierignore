@@ -1,0 +1,13 @@
+# IDE Settings
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Production Build
+dist/
+
+# Environment Variables
+.env
+.env.*
+*.env
