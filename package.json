@@ -2,14 +2,18 @@
   "name": "codesync-backend",
   "version": "1.0.0",
   "description": "Production-grade Node.js backend for a real-time collaborative code editor and execution engine.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "javascript",
     "backend"
   ],
   "author": "Ashutosh porwal",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
 }
