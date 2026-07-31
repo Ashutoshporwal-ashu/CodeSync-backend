@@ -4,6 +4,22 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendVerificationEmail } from "../utils/sendEmail.js";
 
+const generateAccessAndRefreshToken = async (email) => {
+    try {
+        const user = await User.findOne({email});
+    
+        const refreshToken = user.generateRefreshToken()
+        const accessToken = user.generateAccessToken()
+    
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return {accessToken, refreshToken}
+    } catch (error) {
+        throw new ApiError(500, "something went wrong while generation refresh and accessToken")
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     const {fullname, email, password} = req.body
 
@@ -81,7 +97,48 @@ const verifyEmail = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Email verified successfully. Your account is now active."));
 })
 
+const googelAuth = asyncHandler(async (req, res) => {
+    const profile = req.user // email, avatar, name
+
+    if(!profile){
+        throw new ApiError(500, "User profile could not be found")
+    }
+    
+    const name = profile.displayName
+    const email = profile.emails[0].value
+
+    let user = await User.findOne({email})
+
+    if(!user){
+        user = await User.create({
+            fullname: name,
+            email: email,
+            isVerified: true,
+            authProvider: 'google'
+        })
+    }
+
+    if(!user){
+        throw new ApiError(500, "Google authentication failed while creating user")
+    }
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    const {accessToken, refreshToken} = generateAccessAndRefreshToken(email)
+
+    return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json(new ApiResponse(200, user, "Google Authantification Successful"))
+
+})
+
 export {
     registerUser,
-    verifyEmail
+    verifyEmail,
+    googelAuth
 }
