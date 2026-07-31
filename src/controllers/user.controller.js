@@ -134,10 +134,12 @@ const googelAuth = asyncHandler(async (req, res) => {
             isVerified: true,
             authProvider: 'google'
         })
-    }
 
-    if(!user){
-        throw new ApiError(500, "Google authentication failed while creating user")
+        if(!user){
+            throw new ApiError(500, "Google authentication failed while creating user")
+        }
+
+        sendWelcomeEmail(email, name)
     }
 
     const options = {
@@ -147,13 +149,13 @@ const googelAuth = asyncHandler(async (req, res) => {
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
 
-    sendWelcomeEmail(email, name)
+    const createdUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry")
 
     return res
     .status(200)
     .cookie("refreshToken", refreshToken, options)
     .cookie("accessToken", accessToken, options)
-    .json(new ApiResponse(200, user, "Google Authantification Successful"))
+    .json(new ApiResponse(200, createdUser, "Google Authantification Successful"))
 
 })
 
@@ -205,5 +207,6 @@ const login = asyncHandler(async (req, res) => {
 export {
     registerUser,
     verifyEmail,
-    googelAuth
+    googelAuth,
+    login
 }
