@@ -3,10 +3,12 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendVerificationEmail } from "../utils/sendEmail.js";
+import { sendWelcomeEmail } from "../utils/sendWelcomeEmail.js";
+import { use } from "react";
 
-const generateAccessAndRefreshToken = async (email) => {
+const generateAccessAndRefreshToken = async (userId) => {
     try {
-        const user = await User.findOne({email});
+        const user = await User.findById(userId);
     
         const refreshToken = user.generateRefreshToken()
         const accessToken = user.generateAccessToken()
@@ -16,6 +18,7 @@ const generateAccessAndRefreshToken = async (email) => {
 
         return {accessToken, refreshToken}
     } catch (error) {
+        console.log("error while generation refresh and accessToken", error)
         throw new ApiError(500, "something went wrong while generation refresh and accessToken")
     }
 }
@@ -50,11 +53,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
     await sendVerificationEmail(email, verificationCode);
 
-    const createdUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry")
+    // const createdUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry")
 
     return res
     .status(201)
-    .json(new ApiResponse(201, createdUser, "Account created successfully. A verification OTP has been sent to your email."));
+    .json(new ApiResponse(201, {email: user.email}, "Account created successfully. A verification OTP has been sent to your email."));
 })
 
 const verifyEmail = asyncHandler(async (req, res) => {
@@ -74,6 +77,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found with the provided email.")
     }
 
+    const name = user.fullname
+
     if(user.isVerified){
         throw new ApiError(409, "User account is already verified.")
     }
@@ -92,9 +97,22 @@ const verifyEmail = asyncHandler(async (req, res) => {
 
     await user.save({validateBeforeSave: false})
 
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+    
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    const createdUser = await User.findById(user._id).select("-password -verificationCodeExpiry -verificationCode")
+
+    sendWelcomeEmail(email, name)
+
     return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Email verified successfully. Your account is now active."));
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(new ApiResponse(200, createdUser, "Email verified successfully. Your account is now active."));
 })
 
 const googelAuth = asyncHandler(async (req, res) => {
@@ -127,13 +145,60 @@ const googelAuth = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    const {accessToken, refreshToken} = generateAccessAndRefreshToken(email)
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+
+    sendWelcomeEmail(email, name)
 
     return res
     .status(200)
     .cookie("refreshToken", refreshToken, options)
     .cookie("accessToken", accessToken, options)
     .json(new ApiResponse(200, user, "Google Authantification Successful"))
+
+})
+
+
+const login = asyncHandler(async (req, res) => {
+    const {email, password} = req.body
+
+    if(!email || !password){
+        throw new ApiError(400, "Email and password are required.");
+    }
+
+    const user = await User.findOne({email})
+
+    if(!user){
+        throw new ApiError(401, "Invalid email or password.");
+    }
+
+    if(user.authProvider !== 'local'){
+        throw new ApiError(400, `You registered using ${user.authProvider}. Please continue with Google.`)
+    }
+
+    if (!user.isVerified) {
+        throw new ApiError(403, "Your account is not verified. Please verify your email first.");
+    }
+
+    const isValidPassword = user.isPasswordCorrect(password)
+
+    if(!isValidPassword){
+        throw new ApiError(401, "Invalid email or password.")
+    }
+
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+    
+    const loggedInUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry")
+
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(new ApiResponse(200, loggedInUser, "User logged in successfully."))
 
 })
 
