@@ -243,7 +243,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
         user.forgotPasswordExpiry = undefined
         user.forgotPasswordToken = undefined
 
-        user.save({validateBeforeSave: true})
+        await user.save({validateBeforeSave: false})
 
         throw new ApiError(500, "Error sending email. Please try again.");
     }
@@ -252,17 +252,42 @@ const forgetPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
     const {newPassword} = req.body
+    const {token} = req.params
 
     if(!newPassword || !newPassword.trim()){
         throw new ApiError(400, "Password field cant be empty")
     }
 
-    
+    if(!token){
+        throw new ApiError(400, "Reset token is missing")
+    }
+
+    const user = await User.findOne({
+        forgotPasswordToken: token,
+        forgotPasswordExpiry: {$gt: Date.now()}
+    })
+
+    if(!user){
+        throw new ApiError(400, "Password reset token is invalid or has expired")
+    }
+
+    user.password = newPassword
+    user.forgotPasswordExpiry = undefined
+    user.forgotPasswordToken = undefined
+
+    await user.save()
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password has been reset successfully. You can now login with your new password."))
+
 })
 
 export {
     registerUser,
     verifyEmail,
     googelAuth,
-    login
+    login,
+    forgetPassword,
+    resetPassword
 }
