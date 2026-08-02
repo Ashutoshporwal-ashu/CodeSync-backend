@@ -6,7 +6,6 @@ import { sendVerificationEmail } from "../utils/sendEmail.js";
 import { sendWelcomeEmail } from "../utils/sendWelcomeEmail.js";
 import crypto from "crypto"
 import { sendForgotPasswordEmail } from "../utils/sendForgotPasswordEmail.js";
-import { use } from "react";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -151,12 +150,12 @@ const googelAuth = asyncHandler(async (req, res) => {
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
 
-    const createdUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry")
+    const createdUser = await User.findById(user._id).select("-verificationCode -verificationCodeExpiry")
 
     return res
     .status(200)
-    .cookie("refreshToken", refreshToken, options)
     .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, createdUser, "Google Authantification Successful"))
 
 })
