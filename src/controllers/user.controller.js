@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { sendVerificationEmail } from "../utils/sendEmail.js";
 import { sendWelcomeEmail } from "../utils/sendWelcomeEmail.js";
+import crypto from "crypto"
+import { sendForgotPasswordEmail } from "../utils/sendForgotPasswordEmail.js";
 import { use } from "react";
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -202,6 +204,60 @@ const login = asyncHandler(async (req, res) => {
     .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, loggedInUser, "User logged in successfully."))
 
+})
+
+
+const forgetPassword = asyncHandler(async (req, res) => {
+    const {email} = req.body
+
+    if(!email || !email.trim()){
+        throw new ApiError(400, "Email is required")
+    }
+
+    const user = await User.findOne({email})
+
+    if(!user){
+        throw new ApiError(404, "User with this email does not exist")
+    }
+
+    if(user.authProvider !== 'local'){
+        throw new ApiError(400, `You registered using ${user.authProvider}. Please continue with Google.`)
+    }
+
+    const resetToken = crypto.randomBytes(20).toString("hex")
+    
+    user.forgotPasswordToken = resetToken
+    user.forgotPasswordExpiry = Date.now() + 15 * 60 * 1000
+
+    await user.save({validateBeforeSave: false})
+
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+
+    try {
+        await sendForgotPasswordEmail(user.email, resetUrl)
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password reset email sent successfully"))
+    } catch (error) {
+        user.forgotPasswordExpiry = undefined
+        user.forgotPasswordToken = undefined
+
+        user.save({validateBeforeSave: true})
+
+        throw new ApiError(500, "Error sending email. Please try again.");
+    }
+
+})
+
+const resetPassword = asyncHandler(async (req, res) => {
+    const {newPassword} = req.body
+
+    if(!newPassword || !newPassword.trim()){
+        throw new ApiError(400, "Password field cant be empty")
+    }
+
+    
 })
 
 export {

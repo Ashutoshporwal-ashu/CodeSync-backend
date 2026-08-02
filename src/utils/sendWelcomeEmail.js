@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import { welcomeEmailHtml } from "./welcomeEmailTemplate.js";
 
-// 1. THE ENGINE: Yeh wahi same setup hai jo OTP me use kiya tha
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -12,7 +11,6 @@ const transporter = nodemailer.createTransport({
 
 export const sendWelcomeEmail = async (email, name) => {
     try {
-        // Sirf content change hua hai
         const mailOptions = {
             from: process.env.EMAIL_USER, // company email
             to: email, // user email
