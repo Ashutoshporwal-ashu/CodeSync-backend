@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { googelAuth, registerUser, verifyEmail } from "../controllers/user.controller.js"
+import { forgetPassword, googelAuth, registerUser, resetPassword, verifyEmail } from "../controllers/user.controller.js"
 import passport from "passport"
 
 const router = Router()
@@ -11,5 +11,9 @@ router.route("/verify-email").post(verifyEmail)
 router.route("/google-auth").get(passport.authenticate("google", {scope: ["profile", "email"]}))
 router.route("/google-auth-callback").get(passport.authenticate("google", { session: false }),
     googelAuth)
+
+// password reset
+router.route("/forget-password").post(forgetPassword)
+router.route("/reset-password/:token").patch(resetPassword)
 
 export default router
