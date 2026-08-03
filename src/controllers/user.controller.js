@@ -282,6 +282,10 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 })
 
+// logout 
+
+
+
 export {
     registerUser,
     verifyEmail,
