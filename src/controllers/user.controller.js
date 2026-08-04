@@ -6,7 +6,6 @@ import { sendVerificationEmail } from "../utils/sendEmail.js";
 import { sendWelcomeEmail } from "../utils/sendWelcomeEmail.js";
 import crypto from "crypto"
 import { sendForgotPasswordEmail } from "../utils/sendForgotPasswordEmail.js";
-import { emit } from "cluster";
 import { isValidObjectId } from "mongoose";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
