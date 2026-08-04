@@ -40,3 +40,8 @@ const CreatePublicRoom = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(201, PublicRoom, "Public room is created"))
 })
+
+export {
+    CreatePrivateRoom,
+    CreatePublicRoom
+}
