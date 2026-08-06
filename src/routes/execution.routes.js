@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware";
-import { executeCode } from "../controllers/execution.controller";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { executeCode } from "../controllers/execution.controller.js";
 
 const router = Router()
 
