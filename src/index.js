@@ -4,6 +4,7 @@ import { app } from "./app.js";
 
 import http from "http"
 import { Server } from  "socket.io"
+import {initializeSocket} from "./socket/socket.controller.js"
 
 dotenv.config({
     path: './env'
@@ -18,13 +19,7 @@ const io = new Server(httpServer, {
     }
 })
 
-io.on("connection", (Socket) => {
-    console.log(`New User is connected: ${Socket.id}`)
-
-    Socket.on(disconnect, () => {
-        console.log(`User Disconnected: ${socket.id}`)
-    })
-})
+initializeSocket(io);
 
 connectDB()
 .then(() => {
