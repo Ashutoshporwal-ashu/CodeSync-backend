@@ -159,7 +159,7 @@ const googelAuth = asyncHandler(async (req, res) => {
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, createdUser, "Google Authantification Successful"))
+    .redirect(`${process.env.CORS_ORIGIN}/`);
 
 })
 
@@ -233,7 +233,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
 
     await user.save({validateBeforeSave: false})
 
-    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
     try {
         await sendForgotPasswordEmail(user.email, resetUrl)
